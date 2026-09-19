@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Tutor — StudyForgeAI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/app.css" />
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="scrim" id="scrim"></div>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page" id="root"></div>
+  </div>
+</div>
+<div class="modal" id="modal"></div>
+<script src="assets/app.js"></script>
+<script>
+  var app = SF.mountApp({ active: 'tutor', title: 'AI Tutor', crumb: 'StudyForgeAI · Tutor' });
+  if (!app) throw new Error('auth');
+  var d = app.data, root = document.getElementById('root');
+  var P = new URLSearchParams(location.search);
+
+  if (!d.exams.length) {
+    root.innerHTML = '<div class="empty"><div class="ico">' + SF.icons.tutor + '</div><h2 style="font-size:1.35rem">Your tutor needs an exam</h2>' +
+      '<p class="muted small mt8">Once you add an exam the tutor answers inside your syllabus context.</p><a class="btn btn-primary mt20" href="create-exam.html">Create an exam</a></div>';
+  } else {
+    var exam = (P.get('exam') && SF.examById(P.get('exam'))) || d.exams.find(function (e) { return e.id === d.activeExamId; }) || d.exams[0];
+    var weak = SF.ai.weakestTopic(exam);
+    var presetTopic = P.get('topic') || (weak ? weak.name : (exam.topics[0] ? exam.topics[0].name : ''));
+    var history = [];
+
+    root.innerHTML =
+      '<div class="grid" style="grid-template-columns:1fr 320px;gap:20px">' +
+        '<div class="card" style="padding:0;overflow:hidden">' +
+          '<div class="row between" style="padding:16px 20px;border-bottom:1px solid var(--line)">' +
+            '<div class="row gap10"><span class="avatar" style="background:linear-gradient(135deg,var(--blue-400),var(--indigo))">AI</span>' +
+            '<div><b class="small">StudyForge Tutor</b><div class="tiny muted">Context: ' + SF.esc(exam.name) + ' · ' + SF.esc(exam.yearLevel || '') + '</div></div></div>' +
+            '<button class="btn btn-quiet btn-sm" id="clear">Clear</button>' +
+          '</div>' +
+          '<div class="chat" id="chat"></div>' +
+          '<div class="chat-input">' +
+            '<input class="input" id="msg" placeholder="Ask anything about ' + SF.esc(presetTopic || 'your exam') + '…" />' +
+            '<button class="btn btn-primary" id="send">' + SF.icons.send + '</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="stack gap20">' +
+          '<div class="card">' +
+            '<h3 class="small">Start with</h3>' +
+            '<div class="stack gap8 mt12">' +
+              chip('Explain ' + presetTopic + ' simply') +
+              chip('Give me a worked example') +
+              chip('Quiz me on ' + presetTopic) +
+              chip('What should I study today?') +
+              chip('Why do I keep losing marks?') +
+              chip('Summarise ' + presetTopic + ' in 3 points') +
+            '</div>' +
+          '</div>' +
+          '<div class="card card-flat">' +
+            '<h3 class="small">Topic focus</h3>' +
+            '<select class="select mt12" id="topicSel">' +
+              exam.topics.map(function (t) { return '<option value="' + SF.esc(t.name) + '"' + (t.name === presetTopic ? ' selected' : '') + '>' + SF.esc(t.name) + ' · ' + t.mastery + '%</option>'; }).join('') +
+            '</select>' +
+            '<p class="tiny muted mt12">' + (weak ? 'Weakest topic right now: <b style="color:#fda4af">' + SF.esc(weak.name) + '</b> (' + weak.mastery + '%).' : '') + '</p>' +
+          '</div>' +
+          '<div class="card card-flat tiny muted">🔌 This build ships a local tutor engine so it works offline. Point <b>SF.ai</b> at your model endpoint to answer open-ended questions with full reasoning.</div>' +
+        '</div>' +
+      '</div>';
+
+    var chat = document.getElementById('chat');
+    var input = document.getElementById('msg');
+    var topicSel = document.getElementById('topicSel');
+
+    function chip(text) { return '<button class="chip" style="text-align:left;justify-content:flex-start" data-q="' + SF.esc(text) + '">' + SF.esc(text) + '</button>'; }
+
+    function bubble(role, html) {
+      var div = document.createElement('div');
+      div.className = 'msg ' + (role === 'me' ? 'me' : 'ai');
+      div.innerHTML = '<span class="who">' + (role === 'me' ? 'You' : 'AI') + '</span><div class="bubble">' + html + '</div>';
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+      return div;
+    }
+
+    /* ---------------- the tutor engine ---------------- */
+    function materialFor(topic) {
+      var mats = (exam.materials || []).filter(function (m) { return m.text && m.text.length > 200; });
+      var out = [];
+      mats.forEach(function (m) {
+        m.text.replace(/\s+/g, ' ').split(/[.!?]+\s+/).forEach(function (s) {
+          if (s.length > 45 && s.length < 280 && (!topic || s.toLowerCase().indexOf(String(topic).toLowerCase()) !== -1)) out.push(s.trim());
+        });
+      });
+      return out;
+    }
+
+    function answer(q) {
+      var topic = topicSel.value || presetTopic;
+      var lq = q.toLowerCase();
+      var t = exam.topics.find(function (x) { return x.name === topic; }) || { name: topic, mastery: 50, attempts: 0, correct: 0 };
+      var sents = materialFor(topic);
+      var weakPool = exam.topics.slice().sort(function (a, b) { return a.mastery - b.mastery; });
+      var today = SF.ai.todayPlan(exam);
+
+      function fromNotes(n) {
+        if (!sents.length) return '';
+        return '<div class="mt12" style="border-left:2px solid rgba(56,189,248,.4);padding-left:12px"><div class="tiny muted mb8">FROM YOUR NOTES</div>' +
+          sents.slice(0, n || 2).map(function (s) { return '<div class="small dim" style="margin-bottom:6px">“' + SF.esc(s) + '”</div>'; }).join('') + '</div>';
+      }
+
+      if (/explain|simply|what is|what's|define|definition|meaning/.test(lq)) {
+        return '<b style="display:block;margin-bottom:8px">' + SF.esc(t.name) + ' — in plain English</b>' +
+          '<div class="small dim">Here\'s the way to hold it in your head: ' + SF.esc(t.name) + ' is best understood as a <i>process with rules</i>, not a list of facts to memorise. ' +
+          'Ask yourself three questions — what goes in, what rule or mechanism changes it, and what comes out. If you can trace that path twice without notes, you know the topic.</div>' +
+          '<div class="small dim mt12"><b>Try this:</b> close your notes and explain ' + SF.esc(t.name) + ' to an imaginary classmate in 45 seconds. Where you stall is exactly what to review.</div>' +
+          fromNotes(2) +
+          '<div class="tiny muted mt12">Confidence: ' + t.mastery + '% · ' + (t.attempts ? t.attempts + ' attempts recorded' : 'not tested yet') + '</div>';
+      }
+
+      if (/example|worked|apply|question like|how do i solve/.test(lq)) {
+        return '<b style="display:block;margin-bottom:8px">Worked example — ' + SF.esc(t.name) + '</b>' +
+          '<div class="small dim"><b>Step 1 — identify what\'s being asked.</b> Underline the command word (explain, calculate, compare) and the object of the question.</div>' +
+          '<div class="small dim mt8"><b>Step 2 — write down the rule or definition you need.</b> This is where marks are lost: students recall the concept but not the exact condition.</div>' +
+          '<div class="small dim mt8"><b>Step 3 — apply it.</b> Show each stage even if you can do it in your head; method marks exist.</div>' +
+          '<div class="small dim mt8"><b>Step 4 — state the result in the exam\'s language</b> and sanity-check it against the question.</div>' +
+          fromNotes(1) +
+          '<div class="mt16"><a href="quiz.html?exam=' + exam.id + '&topic=' + encodeURIComponent(t.name) + '&count=6" class="btn btn-soft btn-sm">Practise this with a quiz →</a></div>';
+      }
+
+      if (/quiz me|test me|question me/.test(lq)) {
+        return '<b style="display:block;margin-bottom:8px">Quick check — ' + SF.esc(t.name) + '</b>' +
+          '<div class="small dim">1. State the core rule of ' + SF.esc(t.name) + ' in one sentence.<br>2. Name two terms an examiner would expect to see.<br>3. Give one example where it applies and one where it does not.</div>' +
+          '<div class="small dim mt12">Answer those out loud, then run a marked quiz so your score updates the plan.</div>' +
+          '<div class="mt16"><a href="quiz.html?exam=' + exam.id + '&topic=' + encodeURIComponent(t.name) + '&count=6" class="btn btn-soft btn-sm">Start a marked quiz →</a></div>';
+      }
+
+      if (/what should i study|today|plan|next|priority|focus/.test(lq)) {
+        return '<b style="display:block;margin-bottom:8px">Your priority right now</b>' +
+          '<div class="small dim">' + (weakPool[0] ? '<b>' + SF.esc(weakPool[0].name) + '</b> (' + weakPool[0].mastery + '%) is your weakest topic, so it comes first. ' +
+            (weakPool[1] ? 'Then <b>' + SF.esc(weakPool[1].name) + '</b> (' + weakPool[1].mastery + '%).' : '') : '') + '</div>' +
+          (today ? '<div class="small dim mt12"><b>Today\'s plan:</b><br>' + today.items.map(function (i) { return '• ' + SF.esc(i.title) + ' — ' + i.minutes + ' min'; }).join('<br>') + '</div>' : '') +
+          '<div class="mt16"><a href="dashboard.html" class="btn btn-soft btn-sm">Open today\'s session →</a></div>';
+      }
+
+      if (/lose marks|wrong|mistake|struggle|fail|bad at/.test(lq)) {
+        var n = exam.topics.filter(function (x) { return x.mastery < 60; }).length;
+        return '<b style="display:block;margin-bottom:8px">Where your marks are going</b>' +
+          '<div class="small dim">You currently have <b>' + n + '</b> topic' + (n === 1 ? '' : 's') + ' under 60% confidence. Marks rarely disappear evenly — they cluster around a few ideas you half-know.</div>' +
+          '<div class="small dim mt12">Fix in this order: <b>' + weakPool.slice(0, 3).map(function (x) { return SF.esc(x.name) + ' (' + x.mastery + '%)'; }).join(' → ') + '</b>.</div>' +
+          '<div class="small dim mt12">For each one: re-read the definition, explain it aloud, then take a 6-question quiz. If you score under 70%, do it again tomorrow — not the day before the exam.</div>' +
+          '<div class="mt16"><a href="quiz.html?exam=' + exam.id + '&mode=weak" class="btn btn-soft btn-sm">Drill my weak topics →</a></div>';
+      }
+
+      if (/summar|revision|cheat sheet|recap|3 points|three points/.test(lq)) {
+        return '<b style="display:block;margin-bottom:8px">' + SF.esc(t.name) + ' in three points</b>' +
+          '<div class="small dim">1. <b>What it is</b> — the one-sentence definition you could write from memory.' +
+          '<br>2. <b>How it works</b> — the mechanism, rule or sequence, step by step.' +
+          '<br>3. <b>How it\'s examined</b> — the question type it appears in and the exact terms markers look for.</div>' +
+          fromNotes(2) +
+          '<div class="small dim mt12">Write those three lines on one card. If you can rebuild them from a blank page, the topic is secure.</div>';
+      }
+
+      if (/time|timetable|how long|schedule/.test(lq)) {
+        return '<b style="display:block;margin-bottom:8px">How to use your time</b>' +
+          '<div class="small dim">Your plan assumes <b>' + SF.minutesLabel(exam.dailyMinutes) + '</b> per day for <b>' + exam.topics.length + '</b> topics. ' +
+          'Split it roughly: half on the weakest topic, a fifth on a second topic, the rest on retrieval (quiz or flashcards).</div>' +
+          '<div class="small dim mt12">Protect the last two days for timed practice and mistake review — new content in the final 48 hours reliably lowers scores.</div>';
+      }
+
+      // generic fallback
+      return '<b style="display:block;margin-bottom:8px">Let\'s work on ' + SF.esc(t.name) + '</b>' +
+        '<div class="small dim">I can break this down, give a worked example, quiz you, or summarise it into three memorable points. ' +
+        'Tell me which and I\'ll tailor it to ' + SF.esc(exam.name) + ' (' + SF.esc(exam.yearLevel || 'your year level') + ').</div>' +
+        '<div class="small dim mt12">Meanwhile: your confidence on ' + SF.esc(t.name) + ' sits at <b>' + t.mastery + '%</b>' +
+        (t.attempts ? ', based on ' + t.attempts + ' recorded attempt' + (t.attempts > 1 ? 's' : '') + '.' : ' — it hasn\'t been tested yet.') + '</div>' +
+        '<div class="mt16"><a href="quiz.html?exam=' + exam.id + '&topic=' + encodeURIComponent(t.name) + '&count=6" class="btn btn-soft btn-sm">Test it now →</a></div>';
+    }
+
+    function ask(q) {
+      if (!q.trim()) return;
+      bubble('me', SF.esc(q));
+      history.push({ role: 'me', q: q });
+      var typing = bubble('ai', '<span class="typing"><span></span><span></span><span></span></span>');
+      setTimeout(function () {
+        typing.querySelector('.bubble').innerHTML = answer(q);
+        chat.scrollTop = chat.scrollHeight;
+      }, 620 + Math.random() * 400);
+    }
+
+    document.getElementById('send').onclick = function () { ask(input.value); input.value = ''; };
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { ask(this.value); this.value = ''; } });
+    root.addEventListener('click', function (e) {
+      var c = e.target.closest('[data-q]');
+      if (c) ask(c.dataset.q);
+    });
+    document.getElementById('clear').onclick = function () { chat.innerHTML = ''; greet(); };
+    topicSel.onchange = function () { input.placeholder = 'Ask anything about ' + this.value + '…'; };
+
+    function greet() {
+      var w = SF.ai.weakestTopic(exam);
+      bubble('ai', '<b>Hi — I\'m your ' + SF.esc(exam.subject) + ' tutor.</b>' +
+        '<div class="small dim mt8">I can see your plan' + (w ? ' and your results, so I know <b>' + SF.esc(w.name) + '</b> is currently your weakest topic at ' + w.mastery + '%' : '') + '.</div>' +
+        '<div class="small dim mt12">Ask me to explain something, work through an example, or quiz you. Everything I say is scoped to <b>' + SF.esc(exam.name) + '</b>.</div>');
+    }
+    greet();
+    if (presetTopic) {
+      setTimeout(function () { ask('Explain ' + presetTopic + ' simply'); }, 700);
+    }
+  }
+</script>
+</body>
+</html>

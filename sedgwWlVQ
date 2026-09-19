@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Flashcards — StudyForgeAI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/app.css" />
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="scrim" id="scrim"></div>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page" id="root"></div>
+  </div>
+</div>
+<div class="modal" id="modal"></div>
+<script src="assets/app.js"></script>
+<script>
+  var app = SF.mountApp({ active: 'cards', title: 'AI Flashcards', crumb: 'StudyForgeAI · Retrieval practice' });
+  if (!app) throw new Error('auth');
+  var d = app.data, root = document.getElementById('root');
+  var P = new URLSearchParams(location.search);
+
+  if (!d.exams.length) {
+    root.innerHTML = '<div class="empty"><div class="ico">' + SF.icons.cards + '</div><h2 style="font-size:1.35rem">No deck yet</h2>' +
+      '<p class="muted small mt8">Flashcards are generated from your exam topics and notes.</p><a class="btn btn-primary mt20" href="create-exam.html">Create an exam</a></div>';
+  } else {
+    var exam = (P.get('exam') && SF.examById(P.get('exam'))) || d.exams.find(function (e) { return e.id === d.activeExamId; }) || d.exams[0];
+    var presetTopic = P.get('topic');
+    var deck = null, i = 0, flipped = false, stats = { known: 0, again: 0 };
+
+    function buildDeck(topicNames) {
+      var topics = exam.topics.filter(function (t) { return topicNames.indexOf(t.name) !== -1; });
+      var mats = (exam.materials || []).filter(function (m) { return m.text && m.text.length > 200; });
+      var cards = [];
+      mats.forEach(function (m) {
+        var terms = SF.ai.keyTerms(m.text, 40);
+        var sents = m.text.replace(/\s+/g, ' ').split(/(?<=[.!?])\s+/);
+        terms.forEach(function (term) {
+          var s = sents.find(function (x) { return x.toLowerCase().indexOf(term.toLowerCase()) !== -1 && x.length > 40 && x.length < 260; });
+          if (s && cards.length < 60) {
+            var topic = topics.find(function (t) { return s.toLowerCase().indexOf(t.name.toLowerCase()) !== -1; }) || topics[cards.length % topics.length];
+            cards.push({
+              front: term.charAt(0).toUpperCase() + term.slice(1),
+              back: s.trim(),
+              topic: topic ? topic.name : (topics[0] ? topics[0].name : 'General'),
+              source: m.name, seen: 0
+            });
+          }
+        });
+      });
+      if (cards.length < 4) {
+        // no readable material: build prompt-style recall cards per topic
+        topics.forEach(function (t) {
+          [['Explain ' + t.name + ' in your own words', 'Say it out loud, then check your notes. Did you mention the key steps, the key terms and one example?'],
+           ['Give one worked example involving ' + t.name, 'A strong answer names the method, applies it, and states the result with units or wording from the syllabus.'],
+           ['Name the 3 terms an examiner would look for on ' + t.name, 'If you can list them without notes, this topic is exam-ready.'],
+           ['What usually trips students up in ' + t.name + '?', 'Common traps: mixing up definitions, skipping a step, or answering the wrong part of the question.']]
+            .forEach(function (pair) { cards.push({ front: pair[0], back: pair[1], topic: t.name, source: 'AI prompt', seen: 0 }); });
+        });
+      }
+      return SF.shuffle(cards).slice(0, 40);
+    }
+
+    /* ---------------- setup ---------------- */
+    function setup() {
+      var hasMaterial = (exam.materials || []).some(function (m) { return m.text && m.text.length > 200; });
+      root.innerHTML =
+        '<div class="card reveal">' +
+          '<div class="row between wrapflex gap16">' +
+            '<div><span class="badge badge-blue">Flashcards</span>' +
+            '<h2 style="font-size:1.5rem" class="mt12">Build a deck for ' + SF.esc(exam.name) + '</h2>' +
+            '<p class="muted small mt8">' + (hasMaterial ? 'Cards are written from the wording in your own uploaded notes.' : 'No readable notes yet, so these are recall prompts. Upload notes to get definition cards.') + '</p></div>' +
+            '<div class="badge badge-blue">' + (exam.materials || []).length + ' file(s) attached</div>' +
+          '</div>' +
+          '<label class="small bold mt24" style="display:block">Topics to include</label>' +
+          '<div class="chips mt12" id="chips">' + exam.topics.map(function (t) {
+            var on = presetTopic ? t.name === presetTopic : true;
+            return '<button class="chip' + (on ? ' on' : '') + '" data-value="' + SF.esc(t.name) + '" aria-pressed="' + (on ? 'true' : 'false') + '">' + SF.esc(t.name) + '</button>';
+          }).join('') + '</div>' +
+          '<div class="row gap10 mt24 wrapflex">' +
+            '<button class="btn btn-primary btn-lg" id="start">' + SF.icons.cards + 'Shuffle & start</button>' +
+            '<a class="btn btn-ghost" href="materials.html">Manage material</a>' +
+          '</div>' +
+        '</div>' +
+        '<div class="card card-flat mt20 reveal small muted">💡 How the deck works: flip a card, then rate yourself. Cards you miss are pushed back into the deck so you see them again in the same session — short, repeated retrieval is what actually sticks.</div>';
+
+      var chips = document.getElementById('chips');
+      SF.chipGroup(chips, { multi: true });
+      document.getElementById('start').onclick = function () {
+        var sel = Array.prototype.map.call(chips.querySelectorAll('.chip.on'), function (c) { return c.dataset.value; });
+        if (!sel.length) return SF.toast('Pick at least one topic.');
+        deck = buildDeck(sel);
+        if (!deck.length) return SF.toast('Nothing to build a deck from yet.');
+        i = 0; flipped = false; stats = { known: 0, again: 0 };
+        card();
+      };
+    }
+
+    /* ---------------- card view ---------------- */
+    function card() {
+      if (i >= deck.length) return done();
+      var c = deck[i];
+      root.innerHTML =
+        '<div class="row between wrapflex gap12 mb16">' +
+          '<div class="row gap10"><span class="badge badge-blue">Card ' + (i + 1) + ' / ' + deck.length + '</span>' +
+          '<span class="badge">' + SF.esc(c.topic) + '</span>' + (c.source !== 'AI prompt' ? '<span class="badge badge-green tiny">from ' + SF.esc(c.source) + '</span>' : '') + '</div>' +
+          '<div class="row gap10"><span class="badge badge-green">' + stats.known + ' known</span><span class="badge badge-amber">' + stats.again + ' to repeat</span></div>' +
+        '</div>' +
+        '<div class="progress thin mb20"><i style="width:' + Math.round(i / deck.length * 100) + '%"></i></div>' +
+        '<div class="flashcard" id="fc">' +
+          '<div class="flashcard-inner">' +
+            '<div class="flash-face"><span class="tiny muted">tap to flip</span><h2 style="font-size:1.7rem">' + SF.esc(c.front) + '</h2>' +
+            '<span class="badge">' + SF.esc(c.topic) + '</span></div>' +
+            '<div class="flash-face flash-back"><span class="tiny muted">answer</span><p style="font-size:1.05rem;max-width:560px">' + SF.esc(c.back) + '</p>' +
+            '<span class="tiny muted">' + SF.esc(c.source) + '</span></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="row gap12 mt24" id="rate">' +
+          '<button class="btn btn-ghost" id="again">' + SF.icons.refresh + 'Show me again</button>' +
+          '<button class="btn btn-primary grow" id="known">' + SF.icons.check + 'I knew this</button>' +
+          '<a class="btn btn-quiet" href="tutor.html?exam=' + exam.id + '&topic=' + encodeURIComponent(c.topic) + '">Ask tutor</a>' +
+        '</div>' +
+        '<p class="tiny muted center mt16" style="text-align:center">Card ' + (i + 1) + ' of ' + deck.length + ' · ' + SF.esc(c.topic) + '</p>';
+
+      var fc = document.getElementById('fc');
+      fc.onclick = function () { flipped = !flipped; fc.classList.toggle('flipped', flipped); };
+      document.getElementById('known').onclick = function () {
+        c.seen++; stats.known++; rateMastery(c.topic, true); i++; flipped = false; card();
+      };
+      document.getElementById('again').onclick = function () {
+        c.seen++; stats.again++; rateMastery(c.topic, false);
+        deck.splice(Math.min(deck.length, i + 3), 0, c); // reappear later in this session
+        i++; flipped = false; card();
+      };
+    }
+
+    function rateMastery(topic, ok) {
+      var dd = SF.data();
+      var ex = dd.exams.find(function (x) { return x.id === exam.id; });
+      var t = ex.topics.find(function (x) { return x.name === topic; });
+      if (!t) return;
+      t.mastery = Math.round(SF.clamp(t.mastery * 0.85 + (ok ? 92 : 45) * 0.15, 5, 99));
+      ex.readiness = SF.ai.readiness(ex);
+      SF.saveData(dd);
+    }
+
+    function done() {
+      var dd = SF.data();
+      var ex = dd.exams.find(function (x) { return x.id === exam.id; });
+      ex.quizzes = ex.quizzes || [];
+      ex.quizzes.push({ id: SF.uid('cards'), at: new Date().toISOString(), mode: 'cards', score: stats.known, total: stats.known + stats.again, topics: Array.from(new Set((deck || []).map(function (c) { return c.topic; }))) });
+      SF.saveData(dd);
+
+      root.innerHTML = '<div class="card center" style="text-align:center">' +
+        '<div class="brand-mark" style="margin:0 auto 16px;width:56px;height:56px;border-radius:18px;font-size:1.4rem">✓</div>' +
+        '<h2 style="font-size:1.5rem">Deck complete</h2>' +
+        '<p class="muted small mt8">' + stats.known + ' known · ' + stats.again + ' flagged for another pass. Topic confidence has been updated.</p>' +
+        '<div class="grid g3 mt24">' +
+          tile(stats.known, 'known cold') + tile(stats.again, 'needed a repeat') + tile(Math.round(stats.known / Math.max(1, stats.known + stats.again) * 100) + '%', 'retention this round') +
+        '</div>' +
+        '<div class="row gap12 mt24" style="justify-content:center;flex-wrap:wrap">' +
+          '<button class="btn btn-primary btn-lg" id="shuffle">' + SF.icons.refresh + 'Shuffle a new deck</button>' +
+          '<a class="btn btn-ghost btn-lg" href="quiz.html?exam=' + exam.id + '">Take a quiz instead</a>' +
+          '<a class="btn btn-quiet btn-lg" href="dashboard.html">Dashboard</a>' +
+        '</div></div>';
+      document.getElementById('shuffle').onclick = setup;
+    }
+    function tile(v, l) { return '<div class="card card-flat stat"><b>' + v + '</b><span>' + l + '</span></div>'; }
+
+    setup();
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Materials — StudyForgeAI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/app.css" />
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="scrim" id="scrim"></div>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page" id="root"></div>
+  </div>
+</div>
+<div class="modal" id="modal"></div>
+<script src="assets/app.js"></script>
+<script>
+  var app = SF.mountApp({ active: 'materials', title: 'Materials', crumb: 'StudyForgeAI · Notes & uploads' });
+  if (!app) throw new Error('auth');
+  var d = app.data, root = document.getElementById('root');
+  var P = new URLSearchParams(location.search);
+
+  if (!d.exams.length) {
+    root.innerHTML = '<div class="empty"><div class="ico">' + SF.icons.upload + '</div><h2 style="font-size:1.35rem">Create an exam first</h2>' +
+      '<p class="muted small mt8">Material is attached to an exam so the AI knows what it belongs to.</p><a class="btn btn-primary mt20" href="create-exam.html">Create an exam</a></div>';
+  } else {
+    var exam = (P.get('exam') && SF.examById(P.get('exam'))) || d.exams.find(function (e) { return e.id === d.activeExamId; }) || d.exams[0];
+
+    function summary() {
+      var mats = exam.materials || [];
+      var words = mats.reduce(function (a, m) { return a + (m.text ? m.text.split(/\s+/).length : 0); }, 0);
+      var readable = mats.filter(function (m) { return m.text && m.text.length > 200; }).length;
+      return { count: mats.length, words: words, readable: readable };
+    }
+
+    function render() {
+      var s = summary();
+      root.innerHTML =
+        '<div class="grid" style="grid-template-columns:1.35fr 1fr;gap:20px">' +
+          '<div class="card reveal">' +
+            '<div class="row between wrapflex gap12">' +
+              '<div><span class="badge badge-blue">Notes & PDFs</span>' +
+              '<h2 style="font-size:1.4rem" class="mt12">Material for ' + SF.esc(exam.name) + '</h2>' +
+              '<p class="muted small mt8">The AI writes your quizzes, flashcards and tutor answers from this material — so the more you add, the closer it feels to your actual class.</p></div>' +
+              '<select class="select" id="examSel" style="max-width:230px">' +
+                d.exams.map(function (e) { return '<option value="' + e.id + '"' + (e.id === exam.id ? ' selected' : '') + '>' + SF.esc(e.name) + '</option>'; }).join('') +
+              '</select>' +
+            '</div>' +
+
+            '<div class="drop mt20" id="drop">' +
+              '<div class="row gap10" style="justify-content:center;color:var(--blue-300)">' + SF.icons.upload + '<b class="small" style="color:var(--text)">Drop files here or click to browse</b></div>' +
+              '<p class="tiny muted mt8">PDF · DOCX · PPTX · TXT · MD · CSV · photos (PNG/JPG)</p>' +
+              '<input type="file" id="file" class="hide" multiple accept=".pdf,.docx,.pptx,.txt,.md,.csv,.png,.jpg,.jpeg,.webp" />' +
+            '</div>' +
+
+            '<div class="field mt20"><label for="paste">Or paste your notes straight in</label>' +
+              '<textarea class="textarea" id="paste" placeholder="Paste a section of your notes, a textbook page, or your teacher\'s topic list. This is the fastest way to get real questions generated."></textarea>' +
+              '<span class="hint">Pasted text is read instantly — every term and sentence becomes quiz material.</span>' +
+            '</div>' +
+            '<div class="row gap10 mt12 wrapflex"><button class="btn btn-primary" id="addPaste">Add pasted notes</button>' +
+            '<button class="btn btn-ghost" id="clearText">Clear box</button></div>' +
+
+            '<h3 class="mt24">Attached material</h3>' +
+            ((exam.materials || []).length
+              ? '<div class="stack gap10 mt12">' + (exam.materials || []).map(function (m) {
+                  var words = m.text ? m.text.split(/\s+/).length : 0;
+                  return '<div class="file-item"><span class="file-ico">' + SF.esc((m.kind || 'txt').slice(0, 3).toUpperCase()) + '</span>' +
+                    '<span class="grow" style="min-width:0"><b class="small" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + SF.esc(m.name) + '</b>' +
+                    '<span class="tiny muted">' + (m.text ? words + ' words read · ' + SF.ai.keyTerms(m.text, 999).length + ' key terms' : 'indexed only — ' + (m.size ? Math.round(m.size / 1024) + ' KB' : 'file attached')) + '</span></span>' +
+                    (m.text ? '<button class="btn btn-quiet btn-sm" data-view="' + m.id + '">Preview</button>' : '') +
+                    '<button class="btn btn-quiet btn-sm" data-del="' + m.id + '">' + SF.icons.trash + '</button></div>';
+                }).join('') + '</div>'
+              : '<p class="small muted mt12">Nothing attached yet.</p>') +
+          '</div>' +
+
+          '<div class="stack gap20">' +
+            '<div class="card reveal">' +
+              '<h3>Material health</h3>' +
+              '<div class="grid g2 mt16">' +
+                '<div class="card card-flat stat"><b>' + s.count + '</b><span>files attached</span></div>' +
+                '<div class="card card-flat stat"><b>' + s.readable + '</b><span>readable by AI</span></div>' +
+                '<div class="card card-flat stat"><b>' + s.words.toLocaleString() + '</b><span>words indexed</span></div>' +
+                '<div class="card card-flat stat"><b>' + (s.readable ? 'High' : 'Low') + '</b><span>question quality</span></div>' +
+              '</div>' +
+              (s.readable ? '' : '<div class="alert alert-amber mt16 small" style="border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.08);color:#fcd34d">⚠ No readable text yet. Add typed notes or paste text to unlock content-specific questions.</div>') +
+            '</div>' +
+            '<div class="card card-flat reveal">' +
+              '<h3 class="small">Topics detected</h3>' +
+              '<div class="chips mt12" id="detected"></div>' +
+              '<button class="btn btn-soft btn-sm mt16" id="syncTopics">Add detected topics to exam</button>' +
+            '</div>' +
+            '<div class="card card-flat tiny muted reveal">🔒 Files stay in this browser (demo build). For production, send them to your own upload endpoint and run text extraction server-side before the AI step.</div>' +
+          '</div>' +
+        '</div>';
+
+      buildDetected();
+
+      document.getElementById('examSel').onchange = function () { location.href = 'materials.html?exam=' + this.value; };
+      var drop = document.getElementById('drop'), fi = document.getElementById('file');
+      drop.onclick = function () { fi.click(); };
+      ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+      ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+      drop.addEventListener('drop', function (e) { addFiles(e.dataTransfer.files); });
+      fi.onchange = function () { addFiles(this.files); this.value = ''; };
+
+      document.getElementById('addPaste').onclick = function () {
+        var t = document.getElementById('paste').value.trim();
+        if (t.length < 40) return SF.toast('Paste at least a paragraph or two.');
+        push({ id: SF.uid('mat'), name: 'Pasted notes — ' + new Date().toLocaleDateString(), size: t.length, kind: 'txt', text: t, addedAt: new Date().toISOString() });
+        SF.toast('✨ Notes read — ' + SF.ai.keyTerms(t, 999).length + ' key terms extracted.');
+      };
+      document.getElementById('clearText').onclick = function () { document.getElementById('paste').value = ''; };
+    }
+
+    function push(mat) {
+      var dd = SF.data();
+      var ex = dd.exams.find(function (x) { return x.id === exam.id; });
+      ex.materials = ex.materials || [];
+      ex.materials.push(mat);
+      SF.saveData(dd);
+      exam = ex;
+      render();
+    }
+
+    function addFiles(list) {
+      var lim = SF.limits();
+      Array.prototype.forEach.call(list, function (f) {
+        if (!SF.isPro() && (exam.materials || []).length >= lim.uploads) { SF.upsell('Unlimited uploads'); return; }
+        var kind = (f.name.split('.').pop() || '').toLowerCase();
+        var mat = { id: SF.uid('mat'), name: f.name, size: f.size, kind: kind, text: '', addedAt: new Date().toISOString() };
+        var isText = /^(txt|md|csv|json)$/.test(kind) || /^text\//.test(f.type);
+        if (isText) {
+          var r = new FileReader();
+          r.onload = function () { mat.text = String(r.result || ''); push(mat); SF.toast('📄 ' + SF.esc(f.name) + ' read — ' + SF.ai.keyTerms(mat.text, 999).length + ' key terms.'); };
+          r.readAsText(f);
+        } else {
+          push(mat);
+          SF.toast('📎 ' + SF.esc(f.name) + ' attached to ' + SF.esc(exam.name) + '.');
+        }
+      });
+    }
+
+    function buildDetected() {
+      var texts = (exam.materials || []).map(function (m) { return m.text || ''; }).join('\n');
+      var terms = texts.trim().length > 200 ? SF.ai.keyTerms(texts, 16) : [];
+      var box = document.getElementById('detected');
+      box.innerHTML = terms.length
+        ? terms.map(function (t) { return '<span class="chip" style="cursor:default">' + SF.esc(SF.titleCase(t)) + '</span>'; }).join('')
+        : '<span class="small muted">Upload or paste text and the AI will surface candidate topics here.</span>';
+      document.getElementById('syncTopics').onclick = function () {
+        if (!terms.length) return SF.toast('Nothing detected yet.');
+        var dd = SF.data();
+        var ex = dd.exams.find(function (x) { return x.id === exam.id; });
+        var added = 0;
+        terms.slice(0, 10).forEach(function (t) {
+          var name = SF.titleCase(t);
+          if (!ex.topics.some(function (x) { return x.name.toLowerCase() === name.toLowerCase(); })) {
+            ex.topics.push({ name: name, mastery: 45, attempts: 0, correct: 0 });
+            added++;
+          }
+        });
+        if (added) { SF.ai.regenerateRestOfPlan(ex); ex.readiness = SF.ai.readiness(ex); }
+        SF.saveData(dd);
+        SF.toast(added ? '➕ ' + added + ' topic' + (added > 1 ? 's' : '') + ' added and the plan re-balanced.' : 'Those topics are already tracked.');
+        setTimeout(function () { location.reload(); }, 800);
+      };
+    }
+
+    root.addEventListener('click', function (e) {
+      var del = e.target.closest('[data-del]');
+      if (del) {
+        var dd = SF.data();
+        var ex = dd.exams.find(function (x) { return x.id === exam.id; });
+        ex.materials = ex.materials.filter(function (m) { return m.id !== del.dataset.del; });
+        SF.saveData(dd); exam = ex; render(); SF.toast('File removed.');
+        return;
+      }
+      var view = e.target.closest('[data-view]');
+      if (view) {
+        var m = (exam.materials || []).find(function (x) { return x.id === view.dataset.view; });
+        if (m) SF.modal(SF.esc(m.name), '<p class="small muted">First 1,200 characters read by the AI:</p><div class="card card-flat mt12 small dim" style="max-height:320px;overflow:auto;white-space:pre-wrap">' + SF.esc((m.text || '').slice(0, 1200)) + '</div>', false);
+      }
+    });
+    render();
+  }
+</script>
+</body>
+</html>
