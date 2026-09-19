@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>StudyForgeAI — Your AI-powered exam coach</title>
+<meta name="description" content="Upload your notes, choose your exam date, and let AI create a personalised study plan designed around what you actually need to learn." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/app.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%2338bdf8'/><text y='72' x='50' text-anchor='middle' font-size='62' font-family='Inter,sans-serif' font-weight='900' fill='%2304101f'>S</text></svg>" />
+</head>
+<body>
+
+<!-- ══════════════════════════ NAV ══════════════════════════ -->
+<header class="nav">
+  <div class="wrap">
+    <div class="nav-inner">
+      <a class="brand" href="index.html"><span class="brand-mark">S</span><span>AI Exam Prep<small>StudyForgeAI</small></span></a>
+      <nav class="nav-links" id="navLinks">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="login.html">Log in</a>
+        <a class="btn btn-primary btn-sm" href="signup.html">Start Studying</a>
+      </nav>
+      <button class="nav-toggle" id="navToggle" aria-label="Menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════════════ HERO ══════════════════════════ -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div class="reveal">
+        <span class="eyebrow">✦ Your personal AI exam coach</span>
+        <h1 class="mt20">Your <span class="grad">AI-powered</span> exam coach.</h1>
+        <p class="hero-sub">Upload your notes, choose your exam date, and let AI create a personalised study plan designed around what you actually need to learn.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="signup.html">Start Studying
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a class="btn btn-ghost btn-lg" href="#how">See How It Works</a>
+        </div>
+        <div class="row gap8 mt16 small muted">
+          <span class="dot dot-green"></span> Free to start · No card needed · Works on phone
+        </div>
+        <div class="hero-stats">
+          <div><b class="mono" data-count="12" data-suffix=" days">0</b><span>Average prep window planned</span></div>
+          <div><b class="mono" data-count="8" data-suffix=" tools">0</b><span>Built into one coach</span></div>
+          <div><b class="mono" data-count="3.99" data-dec="2" data-suffix="/mo">0</b><span>Pro, unlimited everything</span></div>
+        </div>
+      </div>
+
+      <!-- dashboard preview -->
+      <div class="preview reveal">
+        <div class="preview-bar"><i></i><i></i><i></i><span class="tiny muted" style="margin-left:8px">app.studyforge.ai/dashboard</span></div>
+        <div class="preview-body">
+          <div class="pv-card">
+            <div class="row between">
+              <div>
+                <div class="tiny muted">Good afternoon 👋</div>
+                <div class="bold" style="font-size:1.05rem">Biology Exam</div>
+                <div class="tiny muted mt4">12 days remaining · 45 min/day</div>
+              </div>
+              <div class="ring" style="--pct:78;--sz:78px;--thick:8px">
+                <div><b style="font-size:1.05rem">78%</b><span style="font-size:.5rem">ready</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pv-card">
+            <div class="row between mb8"><b class="small">Today's Study Plan</b><span class="badge badge-blue tiny">45 min</span></div>
+            <div class="pv-row"><span class="pv-check done">✓</span><span class="grow">Cells — structure &amp; function</span><span class="tiny muted">done</span></div>
+            <div class="pv-row"><span class="pv-check now">●</span><span class="grow">Genetics — inheritance patterns</span><span class="tiny" style="color:var(--blue-300)">20 min</span></div>
+            <div class="pv-row"><span class="pv-check soon">•</span><span class="grow">Practice quiz — Genetics</span><span class="tiny muted">10 min</span></div>
+            <div class="pv-row"><span class="pv-check">•</span><span class="grow">Review mistakes</span><span class="tiny muted">10 min</span></div>
+          </div>
+
+          <div class="pv-card" style="border-color:rgba(251,113,133,.35)">
+            <div class="row between mb8">
+              <b class="small">⚠ Weakest topic</b><span class="badge badge-rose tiny">54% accuracy</span>
+            </div>
+            <div class="small dim">Genetics</div>
+            <div class="progress amber thin mt8"><i style="width:54%"></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ TRUST STRIP ══════════════════════════ -->
+<section class="section-tight" style="padding-top:0">
+  <div class="wrap">
+    <div class="card card-flat reveal" style="padding:20px 26px">
+      <div class="row wrapflex gap24 between">
+        <span class="small muted">Built for the way students really revise</span>
+        <div class="row wrapflex gap24 small dim">
+          <span class="nowrap">📄 Notes &amp; PDFs</span>
+          <span class="nowrap">🎞 PowerPoints</span>
+          <span class="nowrap">📸 Photos of worksheets</span>
+          <span class="nowrap">🧠 Retrieval practice</span>
+          <span class="nowrap">📈 Readiness scoring</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ FEATURES ══════════════════════════ -->
+<section class="section" id="features">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Everything in one coach</span>
+      <h2 class="mt16">Not a chatbot. A complete exam system.</h2>
+      <p>Every tool below feeds the same brain — so your plan, quizzes and flashcards all know what you're weak at.</p>
+    </div>
+
+    <div class="grid g4 mt48">
+      <div class="card feature card-hover reveal">
+        <div class="ico">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="3"/><path d="M7.5 9h6M7.5 13h9M7.5 17h4"/></svg>
+        </div>
+        <h3>Personalised Study Plans</h3>
+        <p>A day-by-day plan built from your exam date, your topics and how much time you actually have.</p>
+      </div>
+      <div class="card feature card-hover reveal">
+        <div class="ico">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9a3 3 0 1 1 4.2 2.8c-.9.5-1.2 1-1.2 2.2"/><circle cx="12" cy="17.2" r=".7" fill="currentColor"/><rect x="2.5" y="2.5" width="19" height="19" rx="5"/></svg>
+        </div>
+        <h3>AI Quizzes</h3>
+        <p>Auto-generated questions drawn from your own notes, with instant marking and explanations.</p>
+      </div>
+      <div class="card feature card-hover reveal">
+        <div class="ico">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2.5h9l4 4V21a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 21V4A1.5 1.5 0 0 1 6.5 2.5z"/><path d="M14.5 2.5V7H19"/></svg>
+        </div>
+        <h3>Practice Exams</h3>
+        <p>Timed mocks in the final stretch, then a breakdown of exactly which topics cost you marks.</p>
+      </div>
+      <div class="card feature card-hover reveal">
+        <div class="ico">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6.5" width="15" height="13" rx="2.5"/><path d="M7 3.5h11.5A2.5 2.5 0 0 1 21 6v11"/></svg>
+        </div>
+        <h3>AI Flashcards</h3>
+        <p>Spaced-repetition cards generated from your material — flip, rate, and the deck reorders itself.</p>
+      </div>
+      <div class="card feature card-hover reveal">
+        <div class="ico">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>
+        </div>
+        <h3>Weak Topic Detection</h3>
+        <p>Accuracy is tracked per topic, so the AI knows which three things are quietly costing you grades.</p>
+      </div>
+      <div class="card feature card-hover reveal">
+        <div class="ico">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 1 1-3.1-6.3"/><path d="M8.6 11.2a3.4 3.4 0 0 1 6.8 0"/><path d="M12 3v1.6M4.6 6.6l1.2 1.1M19.4 6.6l-1.2 1.1"/></svg>
+        </div>
+        <h3>AI Tutor</h3>
+        <p>Ask for a simpler explanation, a worked example, or "quiz me on this" — it answers in your syllabus context.</p>
+      </div>
+      <div class="card feature card-hover reveal">
+        <div class="ico">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 16v2.5A2.5 2.5 0 0 0 6.5 21h11a2.5 2.5 0 0 0 2.5-2.5V16"/></svg>
+        </div>
+        <h3>Notes &amp; PDF Uploads</h3>
+        <p>Drop in PDFs, slides, typed notes or photos of the whiteboard. Everything becomes study material.</p>
+      </div>
+      <div class="card feature card-hover reveal">
+        <div class="ico">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+        </div>
+        <h3>Exam Readiness Tracking</h3>
+        <p>One honest score per exam, recalculated after every quiz, that tells you if you're actually ready.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ HOW IT WORKS ══════════════════════════ -->
+<section class="section" id="how" style="background:linear-gradient(180deg,transparent,rgba(56,189,248,.045),transparent)">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Three steps</span>
+      <h2 class="mt16">How it works</h2>
+      <p>Set it up once in about two minutes. The AI does the planning after that.</p>
+    </div>
+    <div class="grid g3 mt48">
+      <div class="card step reveal">
+        <span class="step-line"></span>
+        <div class="step-num">1</div>
+        <h3>Add your exam</h3>
+        <p class="muted mt8">Enter subject, exam date and topics. Add your year level and how long you can study each day.</p>
+      </div>
+      <div class="card step reveal">
+        <span class="step-line"></span>
+        <div class="step-num">2</div>
+        <h3>Upload your material</h3>
+        <p class="muted mt8">Upload notes, PDFs, PowerPoints or photos. The AI reads them and maps them to your topics.</p>
+      </div>
+      <div class="card step reveal">
+        <div class="step-num">3</div>
+        <h3>Start studying</h3>
+        <p class="muted mt8">AI creates your personalised preparation plan. Study, get tested, and watch the plan adapt.</p>
+      </div>
+    </div>
+
+    <!-- the loop -->
+    <div class="card mt32 reveal" style="padding:30px">
+      <div class="row between wrapflex gap20">
+        <div style="max-width:340px">
+          <span class="badge badge-blue">The adaptive loop</span>
+          <h3 class="mt12">It gets sharper every time you study</h3>
+          <p class="muted small mt8">Answer a quiz and the plan for tomorrow changes. You never study the wrong thing twice.</p>
+        </div>
+        <div class="row wrapflex gap10 small" style="flex:1;justify-content:flex-end">
+          <span class="badge">Upload material</span><span class="muted">→</span>
+          <span class="badge">AI reads it</span><span class="muted">→</span>
+          <span class="badge badge-blue">Study plan</span><span class="muted">→</span>
+          <span class="badge">Study &amp; quiz</span><span class="muted">→</span>
+          <span class="badge badge-rose">Weak topics found</span><span class="muted">→</span>
+          <span class="badge badge-green">Plan adjusts</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ PRICING ══════════════════════════ -->
+<section class="section" id="pricing">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Simple pricing</span>
+      <h2 class="mt16">Start free. Go Pro when it matters.</h2>
+      <p>No hidden tiers, no locked dashboard. Pro costs less than one coffee a month.</p>
+    </div>
+
+    <div class="grid g2 mt48" style="max-width:820px;margin-left:auto;margin-right:auto">
+      <!-- FREE -->
+      <div class="card price-card reveal">
+        <div>
+          <span class="badge">Free</span>
+          <div class="price-amount mt16">$0<span>/month</span></div>
+          <p class="muted small mt8">Everything you need to try the full workflow on one exam.</p>
+        </div>
+        <ul class="price-list">
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> Limited AI questions</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> Limited quizzes</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> One active exam</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> Basic study plan</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> Limited uploads</li>
+          <li class="off"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg> Weak-topic detection</li>
+          <li class="off"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg> Exam readiness score</li>
+        </ul>
+        <a class="btn btn-ghost btn-block mt24" href="signup.html" style="margin-top:auto">Get started free</a>
+      </div>
+
+      <!-- PRO -->
+      <div class="card price-card pro reveal">
+        <span class="ribbon">Best value</span>
+        <div>
+          <span class="badge badge-blue">Pro</span>
+          <div class="price-amount mt16">$3.99<span>/month</span></div>
+          <p class="muted small mt8">Unlimited everything, for every exam you sit this year.</p>
+        </div>
+        <ul class="price-list">
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> Unlimited AI questions</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> Unlimited quizzes</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> Unlimited flashcards</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> Unlimited practice exams</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> Unlimited uploads</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> Personalised study plans</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> Weak-topic detection</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> Adaptive quizzes</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> Exam readiness score</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> AI tutor</li>
+          <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg> Progress tracking</li>
+        </ul>
+        <a class="btn btn-primary btn-block mt24" href="signup.html?plan=pro" style="margin-top:auto">Go Pro — $3.99/month</a>
+        <p class="tiny muted center mt8" style="text-align:center">Cancel anytime. Instantly unlocked.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ FAQ ══════════════════════════ -->
+<section class="section" style="padding-top:20px">
+  <div class="wrap wrap-narrow">
+    <div class="section-head reveal"><h2>Questions students ask</h2></div>
+    <div class="stack gap12 mt32">
+      <details class="card card-flat reveal"><summary class="bold" style="cursor:pointer">Is this just ChatGPT with a nicer skin?</summary><p class="muted mt12 small">No. StudyForgeAI keeps a model of your exam — topics, accuracy per topic, readiness, and a day-by-day plan. The AI writes the questions and explanations, but the planning and weak-topic detection are the product. That's what makes tomorrow's session different from today's.</p></details>
+      <details class="card card-flat reveal"><summary class="bold" style="cursor:pointer">What can I upload?</summary><p class="muted mt12 small">Typed notes, pasted text, PDFs, PowerPoints, worksheets and photos of handwritten pages. Text-based material gets turned into questions and flashcards automatically; images and slides are indexed to the topic they belong to.</p></details>
+      <details class="card card-flat reveal"><summary class="bold" style="cursor:pointer">How much time do I need each day?</summary><p class="muted mt12 small">Whatever you honestly have. Tell it 20 minutes and it builds 20-minute sessions. Consistency beats cramming — the plan assumes you'll actually do it.</p></details>
+      <details class="card card-flat reveal"><summary class="bold" style="cursor:pointer">Can I cancel Pro?</summary><p class="muted mt12 small">Yes, anytime in Account → Subscription. You drop back to Free and keep all your exams and history.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ CTA ══════════════════════════ -->
+<section class="section-tight">
+  <div class="wrap">
+    <div class="card reveal" style="padding:44px 34px;text-align:center;border-color:rgba(56,189,248,.35);box-shadow:var(--glow)">
+      <h2>Your next exam is closer than you think.</h2>
+      <p class="muted mt12" style="max-width:520px;margin-left:auto;margin-right:auto">Set it up in two minutes and get a plan for tomorrow morning.</p>
+      <div class="row gap12 mt24 center wrapflex" style="justify-content:center">
+        <a class="btn btn-primary btn-lg" href="signup.html">Start Studying</a>
+        <a class="btn btn-ghost btn-lg" href="login.html">I have an account</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ FOOTER ══════════════════════════ -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="index.html"><span class="brand-mark">S</span><span>AI Exam Prep<small>StudyForgeAI</small></span></a>
+        <p class="muted small mt16" style="max-width:280px">Study smarter. Know what to study. A personal AI exam coach for high-school students.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <a href="#features">Features</a><a href="#how">How it works</a><a href="#pricing">Pricing</a><a href="signup.html">Start free</a>
+      </div>
+      <div>
+        <h4>Study tools</h4>
+        <a href="quiz.html">Quizzes</a><a href="flashcards.html">Flashcards</a><a href="quiz.html?mode=practice">Practice exams</a><a href="tutor.html">AI tutor</a>
+      </div>
+      <div>
+        <h4>Account</h4>
+        <a href="login.html">Log in</a><a href="signup.html">Sign up</a><a href="forgot-password.html">Forgot password</a><a href="account.html">Settings</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span id="yr"></span> StudyForgeAI · AI Exam Prep</span>
+      <span>Study smarter. Know what to study.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/app.js"></script>
+<script>
+  SF.navToggleSetup();
+  SF.countUp();
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  // If already signed in, offer the dashboard
+  var s = SF.auth.session();
+  if (s) {
+    document.querySelectorAll('a[href="signup.html"], a[href="login.html"]').forEach(function (a) {
+      if (a.classList.contains('btn')) { a.href = 'dashboard.html'; a.textContent = a.textContent.trim() === 'Log in' ? 'Dashboard' : 'Open Dashboard'; }
+    });
+  }
+</script>
+</body>
+</html>
