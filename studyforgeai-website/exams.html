@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>My Exams — StudyForgeAI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/app.css" />
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="scrim" id="scrim"></div>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page page-wide" id="root"></div>
+  </div>
+</div>
+<div class="modal" id="modal"></div>
+<script src="assets/app.js"></script>
+<script>
+  var app = SF.mountApp({ active: 'exams', title: 'My Exams', crumb: 'StudyForgeAI · Exams' });
+  if (!app) throw new Error('auth');
+  var d = app.data, root = document.getElementById('root');
+
+  function render() {
+    d = SF.data();
+    if (!d.exams.length) {
+      root.innerHTML = '<div class="empty"><div class="ico">' + SF.icons.calendar + '</div><h2 style="font-size:1.35rem">No exams yet</h2>' +
+        '<p class="muted small mt8">Add your first exam and the AI builds the plan.</p><a class="btn btn-primary mt20" href="create-exam.html">Create an exam</a></div>';
+      return;
+    }
+    var sorted = d.exams.slice().sort(function (a, b) { return (a.date || '').localeCompare(b.date || ''); });
+    root.innerHTML =
+      '<div class="row between wrapflex gap12 mb20 reveal">' +
+        '<div><h2 style="font-size:1.4rem">' + d.exams.length + ' exam' + (d.exams.length > 1 ? 's' : '') + ' tracked</h2>' +
+        '<p class="muted small mt8">' + (SF.isPro() ? 'Pro — unlimited active exams.' : 'Free plan — 1 active exam. Upgrade for unlimited.') + '</p></div>' +
+        '<a class="btn btn-primary" href="create-exam.html">' + SF.icons.plus + 'New exam</a>' +
+      '</div>' +
+      '<div class="grid g-auto">' + sorted.map(function (e) {
+        var pc = SF.ai.readiness(e), dd = SF.daysBetween(SF.todayISO(), e.date), col = SF.subjectColor(e.subject);
+        var weak = SF.ai.weakestTopic(e);
+        var items = [].concat.apply([], (e.plan || []).map(function (p) { return p.items; }));
+        var done = items.filter(function (i) { return i.done; }).length;
+        return '<div class="card exam-card reveal">' +
+          '<div class="row between"><div class="row gap8"><span class="subject-dot" style="background:' + col + '"></span><b>' + SF.esc(e.subject) + '</b></div>' +
+          '<span class="badge ' + (dd <= 3 ? 'badge-rose' : dd <= 7 ? 'badge-amber' : 'badge-blue') + '">' + (dd > 0 ? dd + ' days' : 'today') + '</span></div>' +
+          '<div><div style="font-weight:600">' + SF.esc(e.name) + '</div>' +
+          '<div class="tiny muted mt4">' + SF.fmtDate(e.date) + ' · ' + SF.esc(e.yearLevel || '') + ' · ' + SF.minutesLabel(e.dailyMinutes) + '/day</div></div>' +
+          '<div><div class="row between tiny muted mb8"><span>Preparation</span><span class="mono">' + pc + '%</span></div>' +
+          '<div class="progress thin"><i style="width:' + pc + '%"></i></div></div>' +
+          '<div class="row between tiny muted"><span>' + e.topics.length + ' topics · ' + done + ' sessions done</span>' +
+          (weak ? '<span>weakest: <b style="color:#fcd34d">' + SF.esc(weak.name) + '</b></span>' : '') + '</div>' +
+          '<div class="row gap8 mt8">' +
+            '<a class="btn btn-soft btn-sm grow" href="exam.html?id=' + e.id + '">Open plan</a>' +
+            (e.id === d.activeExamId ? '<span class="badge badge-blue tiny">active</span>' : '<button class="btn btn-quiet btn-sm" data-active="' + e.id + '">Set active</button>') +
+            '<button class="btn btn-quiet btn-sm" data-del="' + e.id + '">' + SF.icons.trash + '</button>' +
+          '</div>' +
+        '</div>';
+      }).join('') + '</div>' +
+      '<div class="card card-flat mt24 small muted reveal">💡 Days remaining are counted from today. The AI rebuilds the remaining schedule every time your quiz results change.</div>';
+    SF.reveal();
+  }
+
+  root.addEventListener('click', function (e) {
+    var a = e.target.closest('[data-active]');
+    if (a) { var dd = SF.data(); dd.activeExamId = a.dataset.active; SF.saveData(dd); SF.toast('Active exam switched.'); render(); return; }
+    var del = e.target.closest('[data-del]');
+    if (del) {
+      var ex = SF.examById(del.dataset.del);
+      SF.modal('Delete ' + SF.esc(ex.name) + '?', '<p class="muted small">This removes its plan, quiz history and material.</p>',
+        '<button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-danger grow" id="yes">Delete</button>');
+      document.getElementById('yes').onclick = function () {
+        var dd = SF.data();
+        dd.exams = dd.exams.filter(function (x) { return x.id !== ex.id; });
+        if (dd.activeExamId === ex.id) dd.activeExamId = dd.exams[0] ? dd.exams[0].id : null;
+        SF.saveData(dd); SF.closeModal(); SF.toast('Deleted.'); render();
+      };
+    }
+  });
+  render();
+</script>
+</body>
+</html>
